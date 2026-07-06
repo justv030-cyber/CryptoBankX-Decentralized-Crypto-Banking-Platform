@@ -24,6 +24,8 @@
 # Hardhat coverage reports
 /coverage
 
+/todo.md
+
 # Gas snapshot files
 /.gas-snapshot
 

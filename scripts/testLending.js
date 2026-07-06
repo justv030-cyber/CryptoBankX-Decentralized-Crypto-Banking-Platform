@@ -33,7 +33,12 @@ async function main() {
 
     const LendingPool = await ethers.getContractFactory("LendingPool");
 
-    const lending = await LendingPool.deploy(tokenAddress);
+    // InterestRateModel is required by LendingPool constructor
+    const InterestRateModel = await ethers.getContractFactory("InterestRateModel");
+    const interestModel = await InterestRateModel.deploy(5, 1);
+    await interestModel.waitForDeployment();
+
+    const lending = await LendingPool.deploy(tokenAddress, await interestModel.getAddress());
 
     await lending.waitForDeployment();
 
@@ -162,21 +167,25 @@ async function main() {
     // ==============================
 
 
+    const repayAmount = await lending.getTotalDebt(user.address);
+
+    // repay() pulls `debt + interest` based on *current* timestamp inside the contract.
+    // Approve a slightly higher amount to cover interest accrual between calculation and tx mining.
+    const repayApproveBuffer = (repayAmount * 100n) / 99n; // ~+1.01%
+
     const repayApprove = await token
         .connect(user)
         .approve(
             lendingAddress,
-            borrowAmount
+            repayApproveBuffer
         );
-
 
     await repayApprove.wait();
 
-
-
     const repayTx = await lending
         .connect(user)
-        .repay(borrowAmount);
+        .repay(repayApproveBuffer);
+
 
 
     await repayTx.wait();
