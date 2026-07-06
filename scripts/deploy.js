@@ -7,14 +7,14 @@ async function main() {
   const { ethers } = await network.connect();
 
   // Get Contract Factory
-  const Counter = await ethers.getContractFactory("Counter");
+  const bankToken = await ethers.getContractFactory("BankToken");
 
   // Deploy
-  const counter = await Counter.deploy();
+  const counter = await bankToken.deploy();
 
   await counter.waitForDeployment();
 
-  console.log("✅ Counter deployed!");
+  console.log("✅ BankToken deployed!");
   console.log("📍 Address:", await counter.getAddress());
 }
 
