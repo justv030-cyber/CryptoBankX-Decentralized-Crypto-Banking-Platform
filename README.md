@@ -1,2 +1,7 @@
-# CryptoBankX-Decentralized-Crypto-Banking-Platform
-CryptoBankX is a production-ready full-stack DeFi banking platform built with Solidity, Next.js, and Node.js. It enables wallet authentication, crypto deposits, lending, borrowing, collateral management, interest rewards, portfolio analytics, and secure smart contract interactions using modern Web3 technologies.
+# Sample Hardhat 3 Project (minimal)
+
+This project has a minimal setup of Hardhat 3, without any plugins.
+
+## What's included?
+
+The project includes native support for TypeScript, Hardhat scripts, tasks, and support for Solidity compilation and tests.

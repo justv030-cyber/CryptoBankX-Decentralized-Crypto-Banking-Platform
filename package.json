@@ -1,7 +1,6 @@
 {
   "name": "cryptobankx-decentralized-crypto-banking-platform",
   "version": "1.0.0",
-  "description": "CryptoBankX is a production-ready full-stack DeFi banking platform built with Solidity, Next.js, and Node.js. It enables wallet authentication, crypto deposits, lending, borrowing, collateral management, interest rewards, portfolio analytics, and secure smart contract interactions using modern Web3 technologies.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -17,24 +16,16 @@
     "url": "https://github.com/justv030-cyber/CryptoBankX-Decentralized-Crypto-Banking-Platform/issues"
   },
   "homepage": "https://github.com/justv030-cyber/CryptoBankX-Decentralized-Crypto-Banking-Platform#readme",
+  "description": "",
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.0.14",
-    "@nomicfoundation/hardhat-ignition": "^3.1.8",
-    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.7",
-    "@types/chai": "^5.2.3",
-    "@types/chai-as-promised": "^8.0.2",
-    "@types/mocha": "^10.0.10",
     "@types/node": "^22.20.0",
-    "chai": "^6.2.2",
-    "ethers": "^6.17.0",
-    "forge-std": "github:foundry-rs/forge-std#v1.9.4",
     "hardhat": "^3.9.1",
-    "mocha": "^11.7.6",
     "typescript": "~6.0.3"
   },
   "type": "module",
   "dependencies": {
-    "@openzeppelin/contracts": "^5.6.1",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "ethers": "^6.17.0"
   }
 }
