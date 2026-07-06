@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-contract InterstRateModel {
+contract InterestRateModel {
     uint256 public baseRate;
     uint256 public multiplier;
 
