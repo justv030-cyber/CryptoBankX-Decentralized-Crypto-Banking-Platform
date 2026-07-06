@@ -35,7 +35,7 @@ contract LendingPool {
     }
 
 
-    function reply(uint256 amount)external{
+    function repay(uint256 amount)external{
         require(amount > 0, "Amount must be greater than zero");
         require(debt[msg.sender]>=amount,"Insufficient debt");
 

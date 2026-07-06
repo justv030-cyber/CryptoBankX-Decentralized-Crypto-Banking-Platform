@@ -1,75 +1,233 @@
 import { network } from "hardhat";
 
 async function main() {
-  console.log(" Starting LendingPool Test...");
+    console.log("🧪 Starting LendingPool Test...");
 
-  //  connect to network (hoodi / local / sepolia)
-  const { ethers } = await network.connect();
+    // 🔌 Connect network
+    const { ethers } = await network.connect();
 
-  const [user] = await ethers.getSigners();
+    const [user] = await ethers.getSigners();
 
-  console.log(" User:", user.address);
+    console.log("👤 User:", user.address);
 
-  //  Deploy Token
-  const BankToken = await ethers.getContractFactory("BankToken");
-  const token = await BankToken.deploy();
-  await token.waitForDeployment();
 
-  console.log("Token deployed:", await token.getAddress());
+    // ==============================
+    // Deploy BankToken
+    // ==============================
 
-  //  Deploy LendingPool
-  const LendingPool = await ethers.getContractFactory("LendingPool");
-  const lending = await LendingPool.deploy(await token.getAddress());
-  await lending.waitForDeployment();
+    const BankToken = await ethers.getContractFactory("BankToken");
 
-  console.log("LendingPool deployed:", await lending.getAddress());
+    const token = await BankToken.deploy();
 
-  // Mint / assume user has tokens (for testing we use deployer balance)
+    await token.waitForDeployment();
 
-  const amount = ethers.parseUnits("100", 18);
-  const borrowAmount = ethers.parseUnits("40", 18);
+    const tokenAddress = await token.getAddress();
 
-  // approve tokens to lending contract
-  await token.connect(user).approve(await lending.getAddress(), amount);
+    console.log("📍 Token deployed:", tokenAddress);
 
-  console.log("Approved tokens");
 
-  //  deposit collateral
-  await lending.connect(user).depositCollateral(amount);
 
-  console.log("Collateral deposited");
+    // ==============================
+    // Deploy LendingPool
+    // ==============================
 
-  //  borrow tokens
-  await lending.connect(user).borrow(borrowAmount);
+    const LendingPool = await ethers.getContractFactory("LendingPool");
 
-  console.log("Borrowed:", borrowAmount.toString());
+    const lending = await LendingPool.deploy(tokenAddress);
 
-  //  check position
-  const position = await lending.getPosition(user.address);
+    await lending.waitForDeployment();
 
-  console.log("Position:");
-  console.log("Collateral:", position[0].toString());
-  console.log("Debt:", position[1].toString());
+    const lendingAddress = await lending.getAddress();
 
-  //  approve for repay
-  await token.connect(user).approve(await lending.getAddress(), borrowAmount);
+    console.log("📍 LendingPool deployed:", lendingAddress);
 
-  //  repay loan
-  await lending.connect(user).repay(borrowAmount);
 
-  console.log("Loan Repaid Successfully");
 
-  //  final check
-  const finalPosition = await lending.getPosition(user.address);
+    // ==============================
+    // Check User Balance
+    // ==============================
 
-  console.log("Final Position:");
-  console.log("Collateral:", finalPosition[0].toString());
-  console.log("Debt:", finalPosition[1].toString());
+    const userBalance = await token.balanceOf(user.address);
 
-  console.log("LendingPool Test Completed!");
+    console.log(
+        "💰 User Balance:",
+        userBalance.toString()
+    );
+
+
+
+    const amount = ethers.parseUnits("100", 18);
+
+    const borrowAmount = ethers.parseUnits("40", 18);
+
+
+
+    // ==============================
+    // Approve Token
+    // ==============================
+
+    const approveTx = await token
+        .connect(user)
+        .approve(
+            lendingAddress,
+            amount
+        );
+
+    await approveTx.wait();
+
+
+    console.log("✅ Approved tokens");
+
+
+
+    const allowance = await token.allowance(
+        user.address,
+        lendingAddress
+    );
+
+
+    console.log(
+        "🔐 Allowance:",
+        allowance.toString()
+    );
+
+
+
+    // ==============================
+    // Deposit Collateral
+    // ==============================
+
+
+    const depositTx = await lending
+        .connect(user)
+        .depositCollateral(amount);
+
+
+    await depositTx.wait();
+
+
+    console.log(
+        "💰 Collateral deposited"
+    );
+
+
+
+    // ==============================
+    // Borrow
+    // ==============================
+
+
+    const borrowTx = await lending
+        .connect(user)
+        .borrow(borrowAmount);
+
+
+    await borrowTx.wait();
+
+
+    console.log(
+        "🏦 Borrowed:",
+        borrowAmount.toString()
+    );
+
+
+
+    // ==============================
+    // Check Position
+    // ==============================
+
+
+    const position = await lending.getPosition(
+        user.address
+    );
+
+
+    console.log("📊 Position:");
+
+    console.log(
+        "Collateral:",
+        position[0].toString()
+    );
+
+
+    console.log(
+        "Debt:",
+        position[1].toString()
+    );
+
+
+
+    // ==============================
+    // Repay Loan
+    // ==============================
+
+
+    const repayApprove = await token
+        .connect(user)
+        .approve(
+            lendingAddress,
+            borrowAmount
+        );
+
+
+    await repayApprove.wait();
+
+
+
+    const repayTx = await lending
+        .connect(user)
+        .repay(borrowAmount);
+
+
+    await repayTx.wait();
+
+
+
+    console.log(
+        "🔄 Loan Repaid Successfully"
+    );
+
+
+
+    // ==============================
+    // Final Position
+    // ==============================
+
+
+    const finalPosition = await lending.getPosition(
+        user.address
+    );
+
+
+    console.log("📊 Final Position:");
+
+    console.log(
+        "Collateral:",
+        finalPosition[0].toString()
+    );
+
+
+    console.log(
+        "Debt:",
+        finalPosition[1].toString()
+    );
+
+
+
+    console.log(
+        "🎉 LendingPool Test Completed!"
+    );
 }
 
+
+
 main().catch((err) => {
-  console.error("Some Error:", err);
-  process.exit(1);
+
+    console.error(
+        "❌ Error:",
+        err
+    );
+
+    process.exit(1);
+
 });
