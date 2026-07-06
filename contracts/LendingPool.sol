@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract LendingPoo {
+contract LendingPool {
     IERC20 public token;
 
     mapping(address => uint256) public collateral;
