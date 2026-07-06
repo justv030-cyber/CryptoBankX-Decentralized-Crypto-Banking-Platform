@@ -39,17 +39,17 @@ contract LendingPoo {
         require(amount > 0, "Amount must be greater than zero");
         require(debt[msg.sender]>=amount,"Insufficient debt");
 
-        require(token.transferFrom(msg.sender, address(this), amount,"Transfer Failed");
+        require(token.transferFrom(msg.sender, address(this), amount), "Transfer Failed");
 
         debt[msg.sender]-=amount;
     }
 
 
     function getPosition(address user) external view returns (uint256 ,uint256){
-        return collateral[user],debt[user];
+        return (collateral[user], debt[user]);
     }
 
-    function isSafe(uint256 user)external view returns(bool){
+    function isSafe(address user) external view returns(bool){
         return collateral[user]>=debt[user]*2;
     }
 }
