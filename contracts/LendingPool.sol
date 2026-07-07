@@ -14,11 +14,18 @@ contract LendingPool {
     InterestRateModel public interestRateModel;
     PriceOracle public priceOracle;
     address public liquidationManager;
+    address public owner;
 
     // -------------------------------   modifiers -----------------------------------------------------
 
     modifier onlyLiquidationManager() {
         require(msg.sender == liquidationManager, "Only Liquidation Manager can call this function");
+        _;
+    }
+
+
+    modifier onlyOwner(){
+        require(msg.sender ==owner, "Only owner can call this function");
         _;
     }
 
@@ -35,11 +42,13 @@ contract LendingPool {
 
     ////// ---------------------------counstrcuctor -----------------------------
 
-    constructor(address _token, address _interestRateModel, address _oracle) {
+    constructor(address _token, address _interestRateModel, address _oracle ) {
         token = IERC20(_token);
 
         interestRateModel = InterestRateModel(_interestRateModel);
         priceOracle = PriceOracle(_oracle);
+
+        owner = msg.sender;
     }
 
     mapping(address => uint256) public collateral;
@@ -158,4 +167,9 @@ contract LendingPool {
 
         emit Liquidated(borrower, liquidator, debtAmount, collateralAmount);
     }
+
+    function setLiquidationManager(address _liquidationManager)external onlyOwner {
+        liquidationManager = _liquidationManager;
+    }
 }
+    

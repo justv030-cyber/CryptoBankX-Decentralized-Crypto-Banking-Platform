@@ -4,7 +4,10 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract PriceOracle is Ownable {
+
+
     // ------------- statet variables -------------
+    // The price of the token in USD with 18 decimals ( Don't change this variable name as it is used in other contracts)
 
     uint256 private tokenPrice;
 
