@@ -10,7 +10,18 @@ contract LendingPool {
     InterestRateModel public interestRateModel;
     PriceOracle public priceOracle;
 
+    //  ------------------------------   events -----------------------------------------------------
+
     event Debug(uint256 amount);
+
+    event Liquidated(
+        address indexed borrower,
+        address indexed liquidator,
+        uint256 debtPaid,
+        uint256 collateralSeized
+    );
+
+    ////// ---------------------------counstrcuctor -----------------------------
 
     constructor(address _token, address _interestRateModel, address _oracle) {
         token = IERC20(_token);
@@ -109,7 +120,30 @@ contract LendingPool {
         return interestRateModel.calculateInterest(debt[user], timePassed);
     }
 
-    function getTotalDebt(address user) external view returns (uint256) {
+    function getTotalDebt(address user) public view returns (uint256) {
         return debt[user] + calculateInterest(user);
+    }
+
+    function executeLiquidation(address borrower, address liquidator) external {
+        require(debt[borrower] > 0, "Borrower has no debt");
+        uint256 collateralAmount = collateral[borrower];
+
+        uint256 debtAmount = getTotalDebt(borrower);
+
+        require(
+            token.transferFrom(liquidator, address(this), debtAmount),
+            "Transfer Failed"
+        );
+
+        require(
+            token.transferFrom(liquidator, address(this), collateralAmount),
+            "Transfer Failed"
+        );
+
+        debt[borrower] = 0;
+        collateral[borrower] = 0;
+        borrowTime[borrower] = 0;
+
+        emit Liquidated(borrower, liquidator, debtAmount, collateralAmount);
     }
 }
