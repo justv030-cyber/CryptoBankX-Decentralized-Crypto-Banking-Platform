@@ -16,12 +16,23 @@ contract PriceOracle is Ownable {
     // Constructor
     // ============================================================
 
-   constructor(
+    constructor(
         uint256 initialPrice,
         address initialOwner
     ) Ownable(initialOwner) {
         require(initialPrice > 0, "Invalid price");
 
         tokenPrice = initialPrice;
+    }
+
+    function updatePrice(uint256 newPrice) external onlyOwner {
+        require(newPrice > 0, "Please Enter Valid Price");
+        uint256 oldPrice = tokenPrice;
+        tokenPrice = newPrice;
+        emit PriceUpdated(oldPrice, newPrice);
+    }
+
+    function getPrice() external view returns (uint256) {
+        return tokenPrice;
     }
 }
