@@ -2,10 +2,12 @@
 pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "./InterestRateModel.sol";
 import "./PriceOracle.sol";
 
-contract LendingPool {
+contract LendingPool  is ReentrancyGuard, Pausable {
 
     // ------------------------------   state variables -----------------------------------------------------
 
@@ -72,7 +74,7 @@ event Repaid(
     mapping(address => uint256) public debt;
     mapping(address => uint256) public borrowTime;
 
-    function depositCollateral(uint256 amount) external {
+    function depositCollateral(uint256 amount) external nonReentrant {
         require(amount > 0, "Amount must be greater than zero");
         require(
             token.transferFrom(msg.sender, address(this), amount),
@@ -83,7 +85,7 @@ event Repaid(
         emit CollateralDeposited(msg.sender, amount);
     }
 
-    function borrow(uint256 amount) external {
+    function borrow(uint256 amount) external nonReentrant {
         uint256 price = priceOracle.getPrice();
 
         uint256 collateralValue = (collateral[msg.sender] * price) / 1e18;
@@ -117,7 +119,7 @@ event Repaid(
     //     debt[msg.sender] -= amount;
     // }
 
-    function repay(uint256 amount) external {
+    function repay(uint256 amount) external nonReentrant {
         require(amount > 0, "Amount must be greater than zero");
 
         require(debt[msg.sender] > 0, "No debt available");
@@ -163,7 +165,7 @@ event Repaid(
         return debt[user] + calculateInterest(user);
     }
 
-    function executeLiquidation(address borrower, address liquidator) external  onlyLiquidationManager{
+    function executeLiquidation(address borrower, address liquidator) external  onlyLiquidationManager nonReentrant {
         require(debt[borrower] > 0, "Borrower has no debt");
         uint256 collateralAmount = collateral[borrower];
 
@@ -190,7 +192,7 @@ event Repaid(
         liquidationManager = _liquidationManager;
     }
 
-    function withdrawCollateral(uint256 amount) external{
+    function withdrawCollateral(uint256 amount) external nonReentrant{
         require(amount> 0,"Amount must be greater than zero");
         require(collateral[msg.sender] >= amount,"Insufficient collateral");
 
@@ -207,5 +209,9 @@ event Repaid(
         require(token.transfer(msg.sender,amount),"Transfer Failed Please Try Again Later");
         
         emit CollateralWithdrawn(msg.sender,amount);
+    }
+
+    function pause() external onlyOwner {
+        _pause();
     }
 }
