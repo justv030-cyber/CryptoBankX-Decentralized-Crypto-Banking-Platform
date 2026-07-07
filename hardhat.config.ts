@@ -1,11 +1,14 @@
 import hardhatEthers from "@nomicfoundation/hardhat-ethers";
+import hardhatMocha from "@nomicfoundation/hardhat-mocha";
+// import hardhatChaiMatchers from "@nomicfoundation/hardhat-chai-matchers";
+
 import { defineConfig } from "hardhat/config";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 export default defineConfig({
-  plugins: [hardhatEthers],
+  plugins: [hardhatEthers, hardhatMocha],
 
   solidity: "0.8.28",
 

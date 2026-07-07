@@ -1,9 +1,9 @@
 import { network } from "hardhat";
 
 async function main() {
+
     console.log("🧪 Starting LendingPool Test...");
 
-    // 🔌 Connect network
     const { ethers } = await network.connect();
 
     const [user] = await ethers.getSigners();
@@ -15,36 +15,114 @@ async function main() {
     // Deploy BankToken
     // ==============================
 
-    const BankToken = await ethers.getContractFactory("BankToken");
+    const BankToken =
+        await ethers.getContractFactory("BankToken");
 
-    const token = await BankToken.deploy();
+    const token =
+        await BankToken.deploy();
 
     await token.waitForDeployment();
 
-    const tokenAddress = await token.getAddress();
+    const tokenAddress =
+        await token.getAddress();
 
-    console.log("📍 Token deployed:", tokenAddress);
 
+    console.log(
+        "📍 Token deployed:",
+        tokenAddress
+    );
+
+
+    // ==============================
+    // Deploy InterestRateModel
+    // ==============================
+
+    const InterestRateModel =
+        await ethers.getContractFactory(
+            "InterestRateModel"
+        );
+
+
+    const interestModel =
+        await InterestRateModel.deploy(
+            5,
+            1
+        );
+
+
+    await interestModel.waitForDeployment();
+
+
+    const interestAddress =
+        await interestModel.getAddress();
+
+
+    console.log(
+        "📍 Interest Model:",
+        interestAddress
+    );
+
+
+    // ==============================
+    // Deploy Price Oracle
+    // ==============================
+
+    const PriceOracle =
+        await ethers.getContractFactory(
+            "PriceOracle"
+        );
+
+
+    const oracle =
+        await PriceOracle.deploy(
+            ethers.parseUnits("2",18),
+            user.address
+        );
+
+
+    await oracle.waitForDeployment();
+
+
+    const oracleAddress =
+        await oracle.getAddress();
+
+
+    console.log(
+        "📍 Oracle deployed:",
+        oracleAddress
+    );
 
 
     // ==============================
     // Deploy LendingPool
     // ==============================
 
-    const LendingPool = await ethers.getContractFactory("LendingPool");
 
-    // InterestRateModel is required by LendingPool constructor
-    const InterestRateModel = await ethers.getContractFactory("InterestRateModel");
-    const interestModel = await InterestRateModel.deploy(5, 1);
-    await interestModel.waitForDeployment();
+    const LendingPool =
+        await ethers.getContractFactory(
+            "LendingPool"
+        );
 
-    const lending = await LendingPool.deploy(tokenAddress, await interestModel.getAddress());
+
+    const lending =
+        await LendingPool.deploy(
+            tokenAddress,
+            interestAddress,
+            oracleAddress
+        );
+
 
     await lending.waitForDeployment();
 
-    const lendingAddress = await lending.getAddress();
 
-    console.log("📍 LendingPool deployed:", lendingAddress);
+    const lendingAddress =
+        await lending.getAddress();
+
+
+    console.log(
+        "📍 LendingPool deployed:",
+        lendingAddress
+    );
 
 
 
@@ -52,7 +130,12 @@ async function main() {
     // Check User Balance
     // ==============================
 
-    const userBalance = await token.balanceOf(user.address);
+
+    const userBalance =
+        await token.balanceOf(
+            user.address
+        );
+
 
     console.log(
         "💰 User Balance:",
@@ -61,9 +144,18 @@ async function main() {
 
 
 
-    const amount = ethers.parseUnits("100", 18);
+    const amount =
+        ethers.parseUnits(
+            "100",
+            18
+        );
 
-    const borrowAmount = ethers.parseUnits("40", 18);
+
+    const borrowAmount =
+        ethers.parseUnits(
+            "40",
+            18
+        );
 
 
 
@@ -71,29 +163,17 @@ async function main() {
     // Approve Token
     // ==============================
 
-    const approveTx = await token
+
+    await token
         .connect(user)
         .approve(
             lendingAddress,
             amount
         );
 
-    await approveTx.wait();
-
-
-    console.log("✅ Approved tokens");
-
-
-
-    const allowance = await token.allowance(
-        user.address,
-        lendingAddress
-    );
-
 
     console.log(
-        "🔐 Allowance:",
-        allowance.toString()
+        "✅ Approved tokens"
     );
 
 
@@ -103,12 +183,11 @@ async function main() {
     // ==============================
 
 
-    const depositTx = await lending
+    await lending
         .connect(user)
-        .depositCollateral(amount);
-
-
-    await depositTx.wait();
+        .depositCollateral(
+            amount
+        );
 
 
     console.log(
@@ -122,12 +201,11 @@ async function main() {
     // ==============================
 
 
-    const borrowTx = await lending
+    await lending
         .connect(user)
-        .borrow(borrowAmount);
-
-
-    await borrowTx.wait();
+        .borrow(
+            borrowAmount
+        );
 
 
     console.log(
@@ -142,12 +220,16 @@ async function main() {
     // ==============================
 
 
-    const position = await lending.getPosition(
-        user.address
+    let position =
+        await lending.getPosition(
+            user.address
+        );
+
+
+    console.log(
+        "📊 Before Repay"
     );
 
-
-    console.log("📊 Position:");
 
     console.log(
         "Collateral:",
@@ -167,29 +249,30 @@ async function main() {
     // ==============================
 
 
-    const repayAmount = await lending.getTotalDebt(user.address);
+    const repayAmount =
+        await lending.getTotalDebt(
+            user.address
+        );
 
-    // repay() pulls `debt + interest` based on *current* timestamp inside the contract.
-    // Approve a slightly higher amount to cover interest accrual between calculation and tx mining.
-    const repayApproveBuffer = (repayAmount * 100n) / 99n; // ~+1.01%
 
-    const repayApprove = await token
+    const repayApproveBuffer =
+        (repayAmount * 100n) / 99n;
+
+
+    await token
         .connect(user)
         .approve(
             lendingAddress,
             repayApproveBuffer
         );
 
-    await repayApprove.wait();
 
-    const repayTx = await lending
+
+    await lending
         .connect(user)
-        .repay(repayApproveBuffer);
-
-
-
-    await repayTx.wait();
-
+        .repay(
+            repayApproveBuffer
+        );
 
 
     console.log(
@@ -199,26 +282,55 @@ async function main() {
 
 
     // ==============================
+    // Withdraw Collateral
+    // ==============================
+
+
+    const withdrawAmount =
+        ethers.parseUnits(
+            "100",
+            18
+        );
+
+
+    await lending
+        .connect(user)
+        .withdrawCollateral(
+            withdrawAmount
+        );
+
+
+    console.log(
+        "💸 Collateral Withdrawn"
+    );
+
+
+
+    // ==============================
     // Final Position
     // ==============================
 
 
-    const finalPosition = await lending.getPosition(
-        user.address
+    position =
+        await lending.getPosition(
+            user.address
+        );
+
+
+    console.log(
+        "📊 Final Position"
     );
 
 
-    console.log("📊 Final Position:");
-
     console.log(
         "Collateral:",
-        finalPosition[0].toString()
+        position[0].toString()
     );
 
 
     console.log(
         "Debt:",
-        finalPosition[1].toString()
+        position[1].toString()
     );
 
 
@@ -226,14 +338,15 @@ async function main() {
     console.log(
         "🎉 LendingPool Test Completed!"
     );
+
 }
 
 
 
-main().catch((err) => {
+main().catch((err)=>{
 
     console.error(
-        "❌ Error:",
+        "Error:",
         err
     );
 

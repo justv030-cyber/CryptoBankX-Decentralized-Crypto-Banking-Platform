@@ -40,6 +40,23 @@ contract LendingPool {
         uint256 collateralSeized
     );
 
+    event CollateralWithdrawn(address indexed user, uint256 amount);
+
+    event CollateralDeposited(
+    address indexed user,
+    uint256 amount
+);
+
+event Borrowed(
+    address indexed user,
+    uint256 amount
+);
+
+event Repaid(
+    address indexed user,
+    uint256 amount
+);
+
     ////// ---------------------------counstrcuctor -----------------------------
 
     constructor(address _token, address _interestRateModel, address _oracle ) {
@@ -63,6 +80,7 @@ contract LendingPool {
         );
 
         collateral[msg.sender] += amount;
+        emit CollateralDeposited(msg.sender, amount);
     }
 
     function borrow(uint256 amount) external {
@@ -145,7 +163,7 @@ contract LendingPool {
         return debt[user] + calculateInterest(user);
     }
 
-    function executeLiquidation(address borrower, address liquidator) external  {
+    function executeLiquidation(address borrower, address liquidator) external  onlyLiquidationManager{
         require(debt[borrower] > 0, "Borrower has no debt");
         uint256 collateralAmount = collateral[borrower];
 
@@ -157,7 +175,7 @@ contract LendingPool {
         );
 
         require(
-            token.transferFrom(liquidator, address(this), collateralAmount),
+            token.transferFrom(liquidator,address(this), collateralAmount),
             "Collateral Transfer Failed"
         );
 
@@ -171,5 +189,23 @@ contract LendingPool {
     function setLiquidationManager(address _liquidationManager)external onlyOwner {
         liquidationManager = _liquidationManager;
     }
+
+    function withdrawCollateral(uint256 amount) external{
+        require(amount> 0,"Amount must be greater than zero");
+        require(collateral[msg.sender] >= amount,"Insufficient collateral");
+
+        uint256 remainingCollateral  = collateral[msg.sender] - amount;
+
+        uint256 price = priceOracle.getPrice();
+
+        uint256 remainingCollateralValue  = (remainingCollateral * price)/1e18;
+
+        require(remainingCollateralValue>=getTotalDebt(msg.sender)*2,"Withdrawal would make position unsafe");
+
+        collateral[msg.sender] = remainingCollateral;
+
+        require(token.transfer(msg.sender,amount),"Transfer Failed Please Try Again Later");
+        
+        emit CollateralWithdrawn(msg.sender,amount);
+    }
 }
-    
