@@ -3,17 +3,20 @@ pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./InterestRateModel.sol";
+import "./PriceOracle.sol";
 
 contract LendingPool {
     IERC20 public token;
     InterestRateModel public interestRateModel;
+    PriceOracle public priceOracle;
 
     event Debug(uint256 amount);
 
-    constructor(address _token, address _interestRateModel) {
+    constructor(address _token, address _interestRateModel, address _oracle) {
         token = IERC20(_token);
 
         interestRateModel = InterestRateModel(_interestRateModel);
+        priceOracle = PriceOracle(_oracle);
     }
 
     mapping(address => uint256) public collateral;
@@ -31,11 +34,20 @@ contract LendingPool {
     }
 
     function borrow(uint256 amount) external {
+        uint256 price = priceOracle.getPrice();
+
+        uint256 collateralValue = (collateral[msg.sender] * price) / 1e18;
+
+        uint256 maxBorrow = collateralValue / 2;
+
         require(amount > 0, "Amount must be greater than zero");
-        require(
-            collateral[msg.sender] >= amount * 2,
-            "Insufficient collateral"
-        );
+        require(collateral[msg.sender] > 0, "No collateral deposited");
+        // require(
+        //     collateral[msg.sender] >= amount * 2,
+        //     "Insufficient collateral"
+        // );
+
+        require(amount <= maxBorrow, "Borrrow Exceed Limit...");
         debt[msg.sender] += amount;
 
         borrowTime[msg.sender] = block.timestamp;
@@ -55,27 +67,27 @@ contract LendingPool {
     //     debt[msg.sender] -= amount;
     // }
 
-   function repay(uint256 amount) external {
-    require(amount > 0, "Amount must be greater than zero");
+    function repay(uint256 amount) external {
+        require(amount > 0, "Amount must be greater than zero");
 
-    require(debt[msg.sender] > 0, "No debt available");
+        require(debt[msg.sender] > 0, "No debt available");
 
-    uint256 interest = interestRateModel.calculateInterest(
-        debt[msg.sender],
-        block.timestamp - borrowTime[msg.sender]
-    );
+        uint256 interest = interestRateModel.calculateInterest(
+            debt[msg.sender],
+            block.timestamp - borrowTime[msg.sender]
+        );
 
-    uint256 totalRepay = debt[msg.sender] + interest;
+        uint256 totalRepay = debt[msg.sender] + interest;
 
-    emit Debug(totalRepay);
+        emit Debug(totalRepay);
 
-    require(
-        token.transferFrom(msg.sender, address(this), totalRepay),
-        "Transfer Failed"
-    );
+        require(
+            token.transferFrom(msg.sender, address(this), totalRepay),
+            "Transfer Failed"
+        );
 
-    debt[msg.sender] = 0;
-}
+        debt[msg.sender] = 0;
+    }
 
     function getPosition(
         address user
@@ -84,7 +96,11 @@ contract LendingPool {
     }
 
     function isSafe(address user) external view returns (bool) {
-        return collateral[user] >= debt[user] * 2;
+        uint256 price = priceOracle.getPrice();
+
+        uint256 collateralValue = (collateral[user] * price) / 1e18;
+
+        return collateralValue >= debt[user] * 2;
     }
 
     function calculateInterest(address user) public view returns (uint256) {
