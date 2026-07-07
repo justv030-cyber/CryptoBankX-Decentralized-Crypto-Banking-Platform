@@ -13,12 +13,10 @@ contract LiquidationManager {
     function liquidate(address user) external {
         require(!lendingPool.isSafe(user), "User position is healthy");
 
-        (, uint256 debtAmount) = lendingPool
-            .getPosition(user);
+        (, uint256 debtAmount) = lendingPool.getPosition(user);
 
         require(debtAmount > 0, "User has no debt");
 
-        lendingPool.executeLiquidation(user,msg.sender);
-
+        lendingPool.executeLiquidation(user, msg.sender);
     }
 }

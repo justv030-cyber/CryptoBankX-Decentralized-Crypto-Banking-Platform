@@ -6,9 +6,21 @@ import "./InterestRateModel.sol";
 import "./PriceOracle.sol";
 
 contract LendingPool {
+
+    // ------------------------------   state variables -----------------------------------------------------
+
+
     IERC20 public token;
     InterestRateModel public interestRateModel;
     PriceOracle public priceOracle;
+    address public liquidationManager;
+
+    // -------------------------------   modifiers -----------------------------------------------------
+
+    modifier onlyLiquidationManager() {
+        require(msg.sender == liquidationManager, "Only Liquidation Manager can call this function");
+        _;
+    }
 
     //  ------------------------------   events -----------------------------------------------------
 
@@ -124,7 +136,7 @@ contract LendingPool {
         return debt[user] + calculateInterest(user);
     }
 
-    function executeLiquidation(address borrower, address liquidator) external {
+    function executeLiquidation(address borrower, address liquidator) external  {
         require(debt[borrower] > 0, "Borrower has no debt");
         uint256 collateralAmount = collateral[borrower];
 
@@ -137,7 +149,7 @@ contract LendingPool {
 
         require(
             token.transferFrom(liquidator, address(this), collateralAmount),
-            "Transfer Failed"
+            "Collateral Transfer Failed"
         );
 
         debt[borrower] = 0;
