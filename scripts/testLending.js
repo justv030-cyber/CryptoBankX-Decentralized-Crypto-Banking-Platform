@@ -75,7 +75,7 @@ async function main() {
 
     const oracle =
         await PriceOracle.deploy(
-            ethers.parseUnits("2",18),
+            ethers.parseUnits("2", 18),
             user.address
         );
 
@@ -164,19 +164,40 @@ async function main() {
     // ==============================
 
 
-    await token
+    const approveTx = await token
         .connect(user)
         .approve(
             lendingAddress,
             amount
         );
 
+    console.log("Approve Tx:", approveTx.hash);
+
+    await approveTx.wait();
+
+    console.log("✅ Approve Confirmed");
 
     console.log(
-        "✅ Approved tokens"
+        "Pool Token:",
+        await lending.token()
     );
 
+    console.log(
+        "Balance:",
+        (
+            await token.balanceOf(user.address)
+        ).toString()
+    );
 
+    console.log(
+        "Allowance:",
+        (
+            await token.allowance(
+                user.address,
+                await lending.getAddress()
+            )
+        ).toString()
+    );
 
     // ==============================
     // Deposit Collateral
@@ -195,10 +216,33 @@ async function main() {
     );
 
 
+    const positionAfterDeposit = await lending.getPosition(user.address);
+
+    console.log(
+        "Collateral After Deposit:",
+        positionAfterDeposit[0].toString()
+    );
+
+    console.log(
+        "Debt After Deposit:",
+        positionAfterDeposit[1].toString()
+    );
+
+
 
     // ==============================
     // Borrow
     // ==============================
+
+    console.log(
+        "Borrow Signer:",
+        (await lending.runner?.getAddress?.()) ?? user.address
+    );
+
+    console.log(
+        "User:",
+        user.address
+    );
 
 
     await lending
@@ -343,7 +387,7 @@ async function main() {
 
 
 
-main().catch((err)=>{
+main().catch((err) => {
 
     console.error(
         "Error:",
