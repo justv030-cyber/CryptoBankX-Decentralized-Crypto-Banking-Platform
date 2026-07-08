@@ -6,6 +6,12 @@ import {
   BANK_TOKEN_ADDRESS,
 } from "./contract";
 
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
+
 export async function getContracts() {
   if (!window.ethereum) {
     throw new Error("MetaMask not found");

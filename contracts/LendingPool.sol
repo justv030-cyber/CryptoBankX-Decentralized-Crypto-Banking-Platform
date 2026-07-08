@@ -6,11 +6,11 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "./InterestRateModel.sol";
 import "./PriceOracle.sol";
+import "hardhat/console.sol";
 
-contract LendingPool  is ReentrancyGuard, Pausable {
 
+contract LendingPool is ReentrancyGuard, Pausable {
     // ------------------------------   state variables -----------------------------------------------------
-
 
     IERC20 public token;
     InterestRateModel public interestRateModel;
@@ -21,13 +21,15 @@ contract LendingPool  is ReentrancyGuard, Pausable {
     // -------------------------------   modifiers -----------------------------------------------------
 
     modifier onlyLiquidationManager() {
-        require(msg.sender == liquidationManager, "Only Liquidation Manager can call this function");
+        require(
+            msg.sender == liquidationManager,
+            "Only Liquidation Manager can call this function"
+        );
         _;
     }
 
-
-    modifier onlyOwner(){
-        require(msg.sender ==owner, "Only owner can call this function");
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
         _;
     }
 
@@ -44,24 +46,22 @@ contract LendingPool  is ReentrancyGuard, Pausable {
 
     event CollateralWithdrawn(address indexed user, uint256 amount);
 
-    event CollateralDeposited(
-    address indexed user,
-    uint256 amount
-);
+    event CollateralDeposited(address indexed user, uint256 amount);
 
-event Borrowed(
-    address indexed user,
-    uint256 amount
-);
+    event Borrowed(address indexed user, uint256 amount);
 
-event Repaid(
-    address indexed user,
-    uint256 amount
-);
+    event Repaid(address indexed user, uint256 amount);
+
+    event DebugRepay(
+        uint256 debt,
+        uint256 interest,
+        uint256 totalRepay,
+        uint256 amount
+    );
 
     ////// ---------------------------counstrcuctor -----------------------------
 
-    constructor(address _token, address _interestRateModel, address _oracle ) {
+    constructor(address _token, address _interestRateModel, address _oracle) {
         token = IERC20(_token);
 
         interestRateModel = InterestRateModel(_interestRateModel);
@@ -131,10 +131,10 @@ event Repaid(
 
         uint256 totalRepay = debt[msg.sender] + interest;
 
-        emit Debug(totalRepay);
+        emit DebugRepay(debt[msg.sender], interest, totalRepay, amount);
 
         require(
-            token.transferFrom(msg.sender, address(this), totalRepay),
+            token.transferFrom(msg.sender, address(this),totalRepay),
             "Transfer Failed"
         );
 
@@ -165,7 +165,10 @@ event Repaid(
         return debt[user] + calculateInterest(user);
     }
 
-    function executeLiquidation(address borrower, address liquidator) external  onlyLiquidationManager nonReentrant {
+    function executeLiquidation(
+        address borrower,
+        address liquidator
+    ) external onlyLiquidationManager nonReentrant {
         require(debt[borrower] > 0, "Borrower has no debt");
         uint256 collateralAmount = collateral[borrower];
 
@@ -177,7 +180,7 @@ event Repaid(
         );
 
         require(
-            token.transferFrom(liquidator,address(this), collateralAmount),
+            token.transferFrom(liquidator, address(this), collateralAmount),
             "Collateral Transfer Failed"
         );
 
@@ -188,27 +191,35 @@ event Repaid(
         emit Liquidated(borrower, liquidator, debtAmount, collateralAmount);
     }
 
-    function setLiquidationManager(address _liquidationManager)external onlyOwner {
+    function setLiquidationManager(
+        address _liquidationManager
+    ) external onlyOwner {
         liquidationManager = _liquidationManager;
     }
 
-    function withdrawCollateral(uint256 amount) external nonReentrant{
-        require(amount> 0,"Amount must be greater than zero");
-        require(collateral[msg.sender] >= amount,"Insufficient collateral");
+    function withdrawCollateral(uint256 amount) external nonReentrant {
+        require(amount > 0, "Amount must be greater than zero");
+        require(collateral[msg.sender] >= amount, "Insufficient collateral");
 
-        uint256 remainingCollateral  = collateral[msg.sender] - amount;
+        uint256 remainingCollateral = collateral[msg.sender] - amount;
 
         uint256 price = priceOracle.getPrice();
 
-        uint256 remainingCollateralValue  = (remainingCollateral * price)/1e18;
+        uint256 remainingCollateralValue = (remainingCollateral * price) / 1e18;
 
-        require(remainingCollateralValue>=getTotalDebt(msg.sender)*2,"Withdrawal would make position unsafe");
+        require(
+            remainingCollateralValue >= getTotalDebt(msg.sender) * 2,
+            "Withdrawal would make position unsafe"
+        );
 
         collateral[msg.sender] = remainingCollateral;
 
-        require(token.transfer(msg.sender,amount),"Transfer Failed Please Try Again Later");
-        
-        emit CollateralWithdrawn(msg.sender,amount);
+        require(
+            token.transfer(msg.sender, amount),
+            "Transfer Failed Please Try Again Later"
+        );
+
+        emit CollateralWithdrawn(msg.sender, amount);
     }
 
     function pause() external onlyOwner {

@@ -2,6 +2,8 @@
 
 import Navbar from "@/components/Navbar";
 import DepositCard from "@/components/DepositCard";
+import BorrowCard from "@/components/BorrowCard";
+import RepayLoan from "@/components/RepayLoan";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 
@@ -17,6 +19,7 @@ import {
 
 export default function Home() {
   const [collateral, setCollateral] = useState("0");
+  const [totalDebt, setTotalDebt] = useState("0");
 
   async function loadPosition() {
 
@@ -43,8 +46,66 @@ export default function Home() {
 
   }
 
+
+  const loadDebt = async () => {
+    if (!window.ethereum) return;
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const user = await signer.getAddress();
+
+
+    const lending = new ethers.Contract(
+      LENDING_POOL_ADDRESS,
+      lendingPoolABI,
+      provider
+    );
+
+    const debt = await lending.getTotalDebt(
+      await signer.getAddress()
+    );
+
+    console.log(await lending.interestRateModel());
+    console.log(await lending.priceOracle());
+    console.log(await lending.token());
+    console.log(
+  "Borrow Time:",
+  (await lending.borrowTime(user)).toString()
+);
+
+console.log(
+  "Debt:",
+  (await lending.debt(user)).toString()
+);
+
+console.log(
+  "Interest:",
+  (await lending.calculateInterest(user)).toString()
+);
+    console.log("Debt:", debt.toString());
+    // console.log("Allowance:", allowance.toString());
+    // console.log("Balance:", balance.toString());
+
+    // console.log(
+    //   "Contract Balance:",
+    //   (
+    //     await token.balanceOf(LENDING_POOL_ADDRESS)
+    //   ).toString()
+    // );
+
+    const formatted = Number(
+      ethers.formatUnits(debt, 18)
+    ).toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 4,
+    });
+
+    setTotalDebt(formatted);
+  };
+
   useEffect(() => {
     loadPosition();
+    loadDebt();
   }, []);
 
   return (
@@ -71,8 +132,9 @@ export default function Home() {
 
           <div className="rounded-xl bg-[#111827] p-6 shadow-lg">
             <h3 className="text-gray-400">Debt</h3>
+
             <p className="mt-3 text-3xl font-bold text-red-400">
-              0 BANK
+              {totalDebt} CBT
             </p>
           </div>
 
@@ -106,43 +168,11 @@ export default function Home() {
 
           {/* Borrow */}
 
-          <div className="rounded-xl bg-[#111827] p-8">
-
-            <h2 className="mb-5 text-2xl font-bold">
-              Borrow
-            </h2>
-
-            <input
-              type="number"
-              placeholder="Amount"
-              className="w-full rounded-lg border border-gray-700 bg-[#1F2937] p-4 outline-none"
-            />
-
-            <button className="mt-5 w-full rounded-lg bg-blue-500 py-3 font-bold hover:bg-blue-600">
-              Borrow
-            </button>
-
-          </div>
+          <BorrowCard />
 
           {/* Repay */}
 
-          <div className="rounded-xl bg-[#111827] p-8">
-
-            <h2 className="mb-5 text-2xl font-bold">
-              Repay Loan
-            </h2>
-
-            <input
-              type="number"
-              placeholder="Amount"
-              className="w-full rounded-lg border border-gray-700 bg-[#1F2937] p-4 outline-none"
-            />
-
-            <button className="mt-5 w-full rounded-lg bg-yellow-500 py-3 font-bold hover:bg-yellow-600">
-              Repay
-            </button>
-
-          </div>
+          <RepayLoan />
 
           {/* Withdraw */}
 
