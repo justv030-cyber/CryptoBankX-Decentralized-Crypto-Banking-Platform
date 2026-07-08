@@ -12,6 +12,7 @@ import {
   bankTokenABI,
   lendingPoolABI,
 } from "@/lib/abi";
+import toast from "react-hot-toast";
 
 export default function DepositCard() {
   const [amount, setAmount] = useState("");
@@ -22,12 +23,12 @@ export default function DepositCard() {
 
 
       if (!window.ethereum) {
-        alert("Please install MetaMask");
+        toast.error("Please install MetaMask");
         return;
       }
 
       if (!amount || Number(amount) <= 0) {
-        alert("Enter valid amount");
+        toast.error("Enter valid amount");
         return;
       }
 
@@ -108,14 +109,14 @@ export default function DepositCard() {
 
       await depositTx.wait();
 
-      alert("✅ Collateral Deposited Successfully");
+      toast.success("✅ Collateral Deposited Successfully");
 
 
       setAmount("");
     } catch (err: any) {
       console.error(err);
 
-      alert(
+      toast.error(
         err?.reason ||
         err?.shortMessage ||
         err?.message ||
